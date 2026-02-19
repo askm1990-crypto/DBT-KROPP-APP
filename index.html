@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hva forteller kroppen din? – DBT Verktøy</title>
+
+    <style>
+        /* ── Design Tokens ─────────────────────────────── */
+        :root {
+            --teal:       #4a7c84;
+            --teal-deep:  #2d5159;
+            --teal-light: #e2eff1;
+            --sage:       #7a9e88;
+            --warm:       #f5f0eb;
+            --white:      #ffffff;
+            --text:       #2b3033;
+            --muted:      #6b7b82;
+            --border:     #d4e0e3;
+            --danger:     #b0444a;
+            --radius:     12px;
+            --shadow:     0 2px 20px rgba(0,0,0,.07);
+            --transition: 220ms ease;
+
+            /* Emotion palette */
+            --col-frykt:   #6b8fc7;
+            --col-sinne:   #c9654a;
+            --col-tristhet:#7d9fc9;
+            --col-skam:    #9b6fa8;
+            --col-avsky:   #7eaa76;
+            --col-glede:   #d4a74a;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        /* ── Disclaimer overlay ──────────────────────────── */
+        #disclaimer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(27, 38, 42, 0.72);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            animation: fadeInOverlay .3s ease;
+        }
+        #disclaimer-overlay.hidden {
+            display: none;
+        }
+        @keyframes fadeInOverlay {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        .disclaimer-card {
+            background: var(--white);
+            border-radius: 16px;
+            max-width: 520px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,.25);
+            overflow: hidden;
+            animation: slideUpCard .35s cubic-bezier(.22,1,.36,1);
+        }
+        @keyframes slideUpCard {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .disclaimer-top {
+            background: linear-gradient(135deg, var(--teal-deep) 0%, #1e373d 100%);
+            padding: 28px 28px 22px;
+            color: white;
+        }
+        .disclaimer-top .disclaimer-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .disclaimer-top h2 {
+            font-family: Georgia, 'Palatino Linotype', Palatino, 'Book Antiqua', serif;
+            font-size: 1.4rem;
+            margin: 0 0 6px;
+            font-weight: 400;
+        }
+        .disclaimer-top .subtitle {
+            font-size: .85rem;
+            opacity: .8;
+            margin: 0;
+            font-weight: 300;
+        }
+
+        .disclaimer-body {
+            padding: 24px 28px;
+        }
+
+        .disclaimer-alert {
+            background: #fff5f5;
+            border: 2px solid #e8a0a4;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .disclaimer-alert .alert-icon {
+            font-size: 1.3rem;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .disclaimer-alert p {
+            margin: 0;
+            font-size: .88rem;
+            color: #7a2428;
+            line-height: 1.55;
+        }
+        .disclaimer-alert strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: .9rem;
+        }
+
+        .disclaimer-points {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .disclaimer-points li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: .88rem;
+            color: var(--text);
+            line-height: 1.5;
+        }
+        .disclaimer-points li .dp-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .disclaimer-confirm {
+            display: block;
+            width: 100%;
+            background: var(--teal-deep);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-size: .95rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background var(--transition), transform var(--transition);
+            letter-spacing: .01em;
+        }
+        .disclaimer-confirm:hover { background: #1a2e33; }
+        .disclaimer-confirm:active { transform: scale(0.99); }
+        .disclaimer-confirm:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
+
+        .disclaimer-footer {
+            text-align: center;
+            font-size: .75rem;
+            color: var(--muted);
+            margin-top: 12px;
+        }
+
+        /* When overlay is up, lock scroll */
+        body.overlay-open {
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--warm);
+            color: var(--text);
+            margin: 0;
+            padding: 20px 16px 60px;
+            line-height: 1.65;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        /* ── Header ─────────────────────────────────────── */
+        .app-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .app-header h1 {
+            font-family: Georgia, 'Palatino Linotype', Palatino, 'Book Antiqua', serif;
+            font-size: clamp(1.6rem, 5vw, 2.1rem);
+            color: var(--teal-deep);
+            margin: 0 0 8px;
+            letter-spacing: -0.01em;
+        }
+
+        .app-header .tagline {
+            color: var(--muted);
+            font-size: .9rem;
+            font-weight: 300;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* ── Mindfulness prompt ─────────────────────────── */
+        .breathe-card {
+            background: linear-gradient(135deg, var(--teal) 0%, var(--teal-deep) 100%);
+            color: white;
+            border-radius: var(--radius);
+            padding: 18px 22px;
+            margin-bottom: 28px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+        .breathe-card .icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+        .breathe-card p { margin: 0; font-size: .9rem; opacity: .93; }
+        .breathe-card strong { font-weight: 600; display: block; margin-bottom: 4px; }
+
+        /* ── Form ───────────────────────────────────────── */
+        .form-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        /* Collapsible fieldset header */
+        .section-btn {
+            width: 100%;
+            background: var(--teal);
+            color: white;
+            border: none;
+            padding: 13px 18px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-size: .95rem;
+            font-weight: 600;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background var(--transition);
+        }
+        .section-btn:hover { background: var(--teal-deep); }
+        .section-btn:focus-visible {
+            outline: 3px solid var(--teal-light);
+            outline-offset: -3px;
+        }
+        .section-btn .chevron {
+            transition: transform var(--transition);
+            font-size: .8rem;
+        }
+        .section-btn[aria-expanded="false"] .chevron { transform: rotate(-90deg); }
+
+        .section-body {
+            padding: 16px 18px;
+        }
+        .section-body[hidden] { display: none; }
+
+        /* Checkboxes */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .check-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--white);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-size: .9rem;
+            user-select: none;
+        }
+        .check-label:hover {
+            border-color: var(--teal);
+            background: var(--teal-light);
+        }
+        .check-label:has(input:checked) {
+            border-color: var(--teal);
+            background: var(--teal-light);
+            font-weight: 500;
+        }
+        .check-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            accent-color: var(--teal);
+            cursor: pointer;
+        }
+        .check-label input[type="checkbox"]:focus-visible {
+            outline: 3px solid var(--teal);
+            outline-offset: 2px;
+        }
+
+        /* ── Counter badge ───────────────────────────────── */
+        .counter-bar {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .counter-bar .label {
+            font-size: .85rem;
+            color: var(--muted);
+        }
+        .counter-badge {
+            background: var(--teal);
+            color: white;
+            font-weight: 600;
+            font-size: .8rem;
+            border-radius: 20px;
+            padding: 3px 12px;
+            min-width: 28px;
+            text-align: center;
+            transition: all var(--transition);
+        }
+        .counter-badge.has-items { background: var(--sage); }
+
+        /* ── Intensity ───────────────────────────────────── */
+        .intensity-section {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+        .intensity-section label {
+            display: block;
+            font-weight: 600;
+            font-size: .9rem;
+            margin-bottom: 12px;
+            color: var(--teal-deep);
+        }
+        .intensity-section .sub {
+            font-weight: 400;
+            font-size: .8rem;
+            color: var(--muted);
+            display: block;
+        }
+        .intensity-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--teal);
+            height: 6px;
+            cursor: pointer;
+        }
+        .intensity-val {
+            font-family: Georgia, 'Palatino Linotype', Palatino, 'Book Antiqua', serif;
+            font-size: 1.4rem;
+            color: var(--teal-deep);
+            min-width: 28px;
+            text-align: right;
+        }
+        .intensity-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: .72rem;
+            color: var(--muted);
+            margin-top: 6px;
+        }
+
+        /* ── Validation message ──────────────────────────── */
+        .validation-msg {
+            display: none;
+            background: #fdf0f0;
+            border: 1.5px solid var(--danger);
+            border-radius: 8px;
+            color: var(--danger);
+            padding: 10px 14px;
+            font-size: .85rem;
+            margin-bottom: 12px;
+            align-items: center;
+            gap: 8px;
+        }
+        .validation-msg.visible { display: flex; }
+
+        /* ── Buttons ─────────────────────────────────────── */
+        .btn-primary {
+            display: block;
+            width: 100%;
+            background: var(--teal-deep);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: background var(--transition), transform var(--transition);
+            letter-spacing: .01em;
+        }
+        .btn-primary:hover { background: #1e373d; }
+        .btn-primary:active { transform: scale(0.99); }
+        .btn-primary:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
+
+        .btn-secondary {
+            display: none;
+            width: 100%;
+            background: transparent;
+            color: var(--muted);
+            border: 1.5px solid var(--border);
+            padding: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-size: .9rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all var(--transition);
+        }
+        .btn-secondary:hover { border-color: var(--teal); color: var(--teal-deep); }
+        .btn-secondary.visible { display: block; }
+
+        /* ── Results ─────────────────────────────────────── */
+        #resultat {
+            display: none;
+            margin-top: 24px;
+            animation: slideUp .4s ease;
+        }
+        #resultat.visible { display: block; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            font-family: Georgia, 'Palatino Linotype', Palatino, 'Book Antiqua', serif;
+            font-size: 1.1rem;
+            color: var(--teal-deep);
+            margin: 0 0 16px;
+        }
+        .result-header em {
+            font-style: normal;
+            font-weight: 400;
+            color: var(--muted);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-size: .82rem;
+            display: block;
+            margin-top: 2px;
+        }
+
+        /* Emotion score bars */
+        .score-grid {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+        .score-grid h3 {
+            margin: 0 0 16px;
+            font-size: .85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--muted);
+        }
+        .score-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: .88rem;
+        }
+        .score-row:last-child { margin-bottom: 0; }
+        .score-label {
+            width: 90px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .score-bar-track {
+            flex: 1;
+            background: #eef1f2;
+            border-radius: 20px;
+            height: 10px;
+            overflow: hidden;
+        }
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 20px;
+            transition: width .6s cubic-bezier(.22,1,.36,1);
+        }
+        .score-num {
+            width: 18px;
+            text-align: right;
+            color: var(--muted);
+            font-size: .78rem;
+        }
+
+        /* Emotion result cards */
+        .result-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+        .result-card.primary-card { box-shadow: 0 4px 24px rgba(0,0,0,.10); }
+
+        .result-card-header {
+            padding: 16px 18px 14px;
+            border-bottom: 1px solid #eef1f2;
+        }
+        .result-card-title {
+            font-family: Georgia, 'Palatino Linotype', Palatino, 'Book Antiqua', serif;
+            font-size: 1.3rem;
+            color: var(--teal-deep);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 0 6px;
+        }
+        .primary-badge {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-size: .7rem;
+            font-weight: 600;
+            background: var(--teal);
+            color: white;
+            border-radius: 20px;
+            padding: 2px 8px;
+            letter-spacing: .04em;
+        }
+        .result-card-desc {
+            font-size: .88rem;
+            color: var(--muted);
+            margin: 0;
+        }
+        .result-card-body { padding: 16px 18px; }
+
+        /* DBT skills accordion */
+        .skill-title {
+            font-size: .82rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--teal-deep);
+            margin: 0 0 10px;
+        }
+
+        .skill-item {
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+        .skill-item-btn {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 10px 14px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-size: .85rem;
+            font-weight: 500;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text);
+            transition: background var(--transition);
+        }
+        .skill-item-btn:hover { background: var(--teal-light); }
+        .skill-item-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
+        .skill-item-btn .skill-tag {
+            font-size: .72rem;
+            background: var(--teal-light);
+            color: var(--teal-deep);
+            border-radius: 20px;
+            padding: 2px 8px;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+        .skill-item-content {
+            background: #fafcfc;
+            border-top: 1px solid var(--border);
+            padding: 12px 14px;
+            font-size: .85rem;
+            line-height: 1.7;
+        }
+        .skill-item-content[hidden] { display: none; }
+        .skill-item-content ol, .skill-item-content ul {
+            margin: 6px 0 0;
+            padding-left: 18px;
+        }
+        .skill-item-content li { margin-bottom: 4px; }
+
+        /* Secondary cards */
+        .secondary-emotions {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 18px;
+            margin-bottom: 14px;
+        }
+        .secondary-emotions h3 {
+            font-size: .85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--muted);
+            margin: 0 0 14px;
+        }
+        .secondary-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--teal-light);
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: .85rem;
+            font-weight: 500;
+            color: var(--teal-deep);
+            margin: 0 6px 6px 0;
+        }
+
+        /* Print / timestamp */
+        .result-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 24px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .timestamp {
+            font-size: .78rem;
+            color: var(--muted);
+        }
+        .btn-print {
+            background: none;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-size: .8rem;
+            cursor: pointer;
+            color: var(--muted);
+            transition: all var(--transition);
+        }
+        .btn-print:hover { border-color: var(--teal); color: var(--teal-deep); }
+
+        /* ── Print styles ────────────────────────────────── */
+        @media print {
+            body { background: white; padding: 0; }
+            .breathe-card, .btn-primary, .btn-secondary, .btn-print,
+            .section-btn, .counter-bar, .intensity-section,
+            .form-card, .validation-msg { display: none !important; }
+            .result-card { box-shadow: none; border: 1px solid #ccc; }
+        }
+
+        /* ── Responsive ──────────────────────────────────── */
+        @media (min-width: 500px) {
+            .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Disclaimer overlay ──────────────────────────────────────────── -->
+<div id="disclaimer-overlay" role="dialog" aria-modal="true" aria-labelledby="disc-title" aria-describedby="disc-desc">
+    <div class="disclaimer-card">
+        <div class="disclaimer-top">
+            <span class="disclaimer-icon" aria-hidden="true">🧭</span>
+            <h2 id="disc-title">Før du starter</h2>
+            <p class="subtitle">Les dette kort — det tar under ett minutt</p>
+        </div>
+        <div class="disclaimer-body">
+
+            <div class="disclaimer-alert" role="alert">
+                <span class="alert-icon" aria-hidden="true">🚨</span>
+                <p>
+                    <strong>Ved akutt fare for deg selv eller andre</strong>
+                    Ring <strong>113</strong> (ambulanse) eller oppsøk legevakt umiddelbart. Dette verktøyet er ikke egnet i akutte kriser.
+                </p>
+            </div>
+
+            <ul class="disclaimer-points" id="disc-desc">
+                <li>
+                    <span class="dp-icon" aria-hidden="true">🔍</span>
+                    <span><strong>Dette er et selvrefleksjonsverktøy.</strong> Det hjelper deg å utforske og sette ord på det kroppen din signaliserer — basert på prinsipper fra Dialektisk Atferdsterapi (DBT).</span>
+                </li>
+                <li>
+                    <span class="dp-icon" aria-hidden="true">🩺</span>
+                    <span><strong>Det erstatter ikke terapi eller behandling.</strong> Verktøyet er ikke ment som diagnostikk og kan ikke ta hensyn til din individuelle situasjon slik en terapeut ville gjort.</span>
+                </li>
+                <li>
+                    <span class="dp-icon" aria-hidden="true">🤝</span>
+                    <span><strong>Bruk det som et supplement.</strong> Gjerne ta med innsikter fra verktøyet til neste samtale med din behandler eller et betrodd menneske.</span>
+                </li>
+                <li>
+                    <span class="dp-icon" aria-hidden="true">🔒</span>
+                    <span><strong>Ingenting lagres.</strong> Svarene dine forsvinner når du lukker siden. Verktøyet sender ingen data noe sted.</span>
+                </li>
+            </ul>
+
+            <button type="button" class="disclaimer-confirm" id="disclaimerConfirmBtn">
+                Jeg forstår — ta meg til verktøyet
+            </button>
+            <p class="disclaimer-footer">
+                Trenger du noen å snakke med? Ring Mental Helselinje: <strong>116 123</strong> (gratis, døgnet rundt)
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="container" role="main">
+
+    <!-- Header -->
+    <header class="app-header">
+        <h1>Hva forteller kroppen din?</h1>
+        <p class="tagline">Et DBT-basert verktøy for å koble kroppslige fornemmelser til følelser</p>
+    </header>
+
+    <!-- Mindfulness prompt -->
+    <div class="breathe-card" role="note" aria-label="Innledende instruksjon">
+        <div class="icon" aria-hidden="true">🫁</div>
+        <p>
+            <strong>Før du begynner — ta ett øyeblikk</strong>
+            Ta et rolig innpust og pust langsomt ut. Kjenn etter i kroppen din uten å dømme det du merker. Kryss så av for alt du legger merke til akkurat nå.
+        </p>
+    </div>
+
+    <!-- Checker form -->
+    <form id="bodyScanForm" novalidate aria-label="Kroppsscan-skjema">
+
+        <!-- Counter -->
+        <div class="counter-bar" aria-live="polite" aria-atomic="true">
+            <span class="label">Antall fornemmelser valgt</span>
+            <span class="counter-badge" id="counterBadge">0</span>
+        </div>
+
+        <!-- Hode, ansikt & hals -->
+        <div class="form-card">
+            <button type="button" class="section-btn" aria-expanded="true" aria-controls="sec-hode" id="btn-hode">
+                <span>😮 Hode, Ansikt &amp; Hals</span>
+                <span class="chevron" aria-hidden="true">▼</span>
+            </button>
+            <div id="sec-hode" role="group" aria-labelledby="btn-hode" class="section-body">
+                <div class="checkbox-group">
+                    <label class="check-label">
+                        <input type="checkbox" value="sinne,skam" data-text="Varme i ansiktet">
+                        <span>🔴 Varme / Rødming i ansiktet</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="sinne,frykt" data-text="Stram kjeve">
+                        <span>😬 Stram kjeve / Biter tennene</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="tristhet,glede" data-text="Tårer">
+                        <span>💧 Tårer / Press bak øynene</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="skam,tristhet" data-text="Unngår blikk">
+                        <span>👇 Vil se ned / Unngå blikkontakt</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="tristhet,frykt" data-text="Klump i halsen">
+                        <span>🫶 Klump i halsen / Vanskelig å svelge</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="avsky" data-text="Avsky i ansiktet">
+                        <span>😒 Rynker på nesen / Snurper munnen</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="frykt,skam" data-text="Spent opp">
+                        <span>😳 Spente muskler / Frossen i ansiktet</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bryst & pust -->
+        <div class="form-card">
+            <button type="button" class="section-btn" aria-expanded="true" aria-controls="sec-bryst" id="btn-bryst">
+                <span>🫀 Bryst &amp; Pust</span>
+                <span class="chevron" aria-hidden="true">▼</span>
+            </button>
+            <div id="sec-bryst" role="group" aria-labelledby="btn-bryst" class="section-body">
+                <div class="checkbox-group">
+                    <label class="check-label">
+                        <input type="checkbox" value="frykt,sinne" data-text="Hjertebank">
+                        <span>💓 Hjertebank / Rask puls</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="frykt,sinne" data-text="Overflatisk pust">
+                        <span>💨 Rask / Overflatisk pust</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="tristhet,frykt" data-text="Tyngde i brystet">
+                        <span>🪨 Tyngde eller press i brystet</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="glede" data-text="Åpent bryst">
+                        <span>🌬️ Letthet / Puster fritt og rolig</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="frykt" data-text="Holder pusten">
+                        <span>😮‍💨 Holder pusten / Glemmer å puste</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mage & fordøyelse -->
+        <div class="form-card">
+            <button type="button" class="section-btn" aria-expanded="true" aria-controls="sec-mage" id="btn-mage">
+                <span>🌀 Mage &amp; Indre</span>
+                <span class="chevron" aria-hidden="true">▼</span>
+            </button>
+            <div id="sec-mage" role="group" aria-labelledby="btn-mage" class="section-body">
+                <div class="checkbox-group">
+                    <label class="check-label">
+                        <input type="checkbox" value="frykt,glede" data-text="Sommerfugler">
+                        <span>🦋 "Sommerfugler" i magen</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="frykt,avsky" data-text="Knute i magen">
+                        <span>🪢 Knute i magen / Kvalme</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="tristhet" data-text="Tomhet i magen">
+                        <span>🕳️ En følelse av tomhet eller "hull"</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="sinne,frykt" data-text="Mageuro">
+                        <span>⚡ Mageuro / Magekramper</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="glede" data-text="Ro i magen">
+                        <span>☀️ Varme og ro i magen</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Armer, ben & generelt -->
+        <div class="form-card">
+            <button type="button" class="section-btn" aria-expanded="true" aria-controls="sec-kropp" id="btn-kropp">
+                <span>🦾 Armer, Ben &amp; Generelt</span>
+                <span class="chevron" aria-hidden="true">▼</span>
+            </button>
+            <div id="sec-kropp" role="group" aria-labelledby="btn-kropp" class="section-body">
+                <div class="checkbox-group">
+                    <label class="check-label">
+                        <input type="checkbox" value="sinne" data-text="Knyttede never">
+                        <span>✊ Knyttede never / Spent i hender</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="frykt" data-text="Svette hender">
+                        <span>🖐️ Klamme / Svette hender</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="sinne,frykt" data-text="Skjelving">
+                        <span>🫨 Skjelving / Risting i kroppen</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="tristhet,skam" data-text="Tung kropp">
+                        <span>⚓ Tung kropp / Lite energi</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="sinne" data-text="Rastløshet">
+                        <span>🏃 Rastløshet / Impuls til å handle</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="skam,frykt" data-text="Vil gjemme seg">
+                        <span>🐢 Vil gjøre seg liten / Gjemme seg</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="glede" data-text="Avslappet kropp">
+                        <span>😌 Musklene varme og avslappede</span>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" value="frykt,tristhet" data-text="Nummenhet">
+                        <span>🧊 Nummenhet / Følelsesmessig flathet</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Intensity -->
+        <div class="intensity-section">
+            <label for="intensitySlider">
+                Hvor sterk er opplevelsen akkurat nå?
+                <span class="sub">0 = knapt merkbar, 10 = overveldende</span>
+            </label>
+            <div class="intensity-row">
+                <input type="range" id="intensitySlider" min="0" max="10" value="5" step="1"
+                       aria-valuenow="5" aria-valuemin="0" aria-valuemax="10"
+                       aria-label="Intensitet fra 0 til 10">
+                <span class="intensity-val" id="intensityVal" aria-live="polite">5</span>
+            </div>
+            <div class="intensity-labels" aria-hidden="true">
+                <span>Svak</span>
+                <span>Moderat</span>
+                <span>Sterk</span>
+            </div>
+        </div>
+
+        <!-- Validation -->
+        <div class="validation-msg" id="validationMsg" role="alert" aria-live="assertive">
+            <span>⚠️</span>
+            <span>Vennligst kryss av for minst én ting du kjenner i kroppen.</span>
+        </div>
+
+        <button type="button" class="btn-primary" id="analyzeBtn">
+            Hva kan dette bety? →
+        </button>
+
+    </form>
+
+    <!-- Results -->
+    <div id="resultat" aria-live="polite" aria-label="Resultat">
+        <!-- Inserted by JS -->
+    </div>
+
+    <button type="button" class="btn-secondary" id="resetBtn" aria-label="Nullstill skjemaet">
+        ↩ Nullstill og start på nytt
+    </button>
+
+</div><!-- /container -->
+
+<script>
+'use strict';
+
+/* ── Disclaimer ────────────────────────────────────────────────────── */
+(function () {
+    const overlay = document.getElementById('disclaimer-overlay');
+    const confirmBtn = document.getElementById('disclaimerConfirmBtn');
+    document.body.classList.add('overlay-open');
+
+    confirmBtn.addEventListener('click', () => {
+        overlay.classList.add('hidden');
+        document.body.classList.remove('overlay-open');
+        // Return focus to top of main content
+        document.querySelector('.container').setAttribute('tabindex', '-1');
+        document.querySelector('.container').focus();
+    });
+
+    // Trap focus inside disclaimer while open
+    overlay.addEventListener('keydown', e => {
+        if (e.key !== 'Tab') return;
+        const focusable = overlay.querySelectorAll('button, [href], input, [tabindex]:not([tabindex="-1"])');
+        const first = focusable[0];
+        const last  = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+            if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+        } else {
+            if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+    });
+
+    // Set initial focus to confirm button
+    confirmBtn.focus();
+})();
+
+/* ── Emotion database ─────────────────────────────────────────────── */
+const emotionData = {
+    frykt: {
+        title: "Frykt / Angst",
+        icon: "😨",
+        color: "var(--col-frykt)",
+        desc: "Kroppen mobiliserer for å beskytte deg mot en opplevd trussel — kjemp, flykt eller frys. Dette er et evolusjonsbiologisk alarmsystem.",
+        skills: [
+            {
+                name: "Sjekk fakta",
+                tag: "Emosjonsregulering",
+                content: `<p>Spør deg selv: <em>«Er det en reell trussel her og nå, eller tolker hjernen min situasjonen som farligere enn den er?»</em></p>
+                <p>Skriv ned hva du tror vil skje, og vurder sannsynligheten objektivt.</p>`
+            },
+            {
+                name: "Motsatt handling (Opposite Action)",
+                tag: "Emosjonsregulering",
+                content: `<p>Hvis frykten ikke er berettiget i situasjonen: Gjør det stikk motsatte av hva frykten ber deg om.</p>
+                <ol><li>Nærm deg det du unngår — i små trinn</li><li>Gjenta til frykten reduseres</li></ol>`
+            },
+            {
+                name: "4-7-8 Pust",
+                tag: "Stresstoleranse / TIPP",
+                content: `<p>Pust inn i 4 sekunder → hold i 7 → pust rolig ut i 8. Gjenta 3–4 ganger. Aktiverer det parasympatiske nervesystemet.</p>`
+            },
+            {
+                name: "TIPP – senk fysiologisk arousal",
+                tag: "Stresstoleranse",
+                content: `<ul>
+                <li><strong>T</strong>emperatur – Kaldt vann i ansiktet senker pulsen raskt</li>
+                <li><strong>I</strong>ntensiv trening – Rask bevegelse i 20 min</li>
+                <li><strong>P</strong>acet pust – Langsom utpust</li>
+                <li><strong>P</strong>rogressiv muskelavslapning</li></ul>`
+            }
+        ]
+    },
+    sinne: {
+        title: "Sinne / Irritasjon",
+        icon: "😠",
+        color: "var(--col-sinne)",
+        desc: "Kroppen er klar til kamp. Du har sannsynligvis opplevd urettferdighet, brudd på grenser, eller blokkering av et mål. Sinne er ofte et sekundært signal.",
+        skills: [
+            {
+                name: "STOPP-ferdigheten",
+                tag: "Mindfulness",
+                content: `<ol>
+                <li><strong>S</strong>topp — ikke gjør noe impulsivt</li>
+                <li><strong>T</strong>a et skritt tilbake (bokstavelig)</li>
+                <li><strong>O</strong>bserver hva som skjer i og rundt deg</li>
+                <li><strong>P</strong>rosed med bevissthet</li></ol>`
+            },
+            {
+                name: "Sjekk sekundæremosjon",
+                tag: "Emosjonsregulering",
+                content: `<p>Sinne skjuler ofte en underliggende primæremosjon: frykt, sorg, skam eller skuffelse. Spør: <em>«Hva er den underliggende smerten her?»</em></p>`
+            },
+            {
+                name: "Problemløsning",
+                tag: "Emosjonsregulering",
+                content: `<p>Hvis sinnet er berettiget og situasjonen kan endres:</p>
+                <ol><li>Definer problemet konkret</li><li>Brainstorm løsninger</li><li>Velg én og test den</li></ol>`
+            },
+            {
+                name: "Fysiologisk kjøling",
+                tag: "Stresstoleranse / TIPP",
+                content: `<p>Kaldt vann i ansiktet eller ned langs underarmene aktiverer dykkerrefleksen og senker pulsen raskt. Alternativt: intensiv bevegelse for å «brenne av» den aktiverte energien.</p>`
+            }
+        ]
+    },
+    tristhet: {
+        title: "Tristhet / Sorg",
+        icon: "😢",
+        color: "var(--col-tristhet)",
+        desc: "Kroppen signaliserer tap, savn eller behov for trøst og hvile. Energien trekkes innover. Tristhet er et naturlig og sunt signal — ikke noe som skal bort umiddelbart.",
+        skills: [
+            {
+                name: "Radikal aksept",
+                tag: "Stresstoleranse",
+                content: `<p>Aksepter det smertefulle som faktisk er, uten å kjempe mot det. Aksept betyr ikke at du liker det — det betyr at du slutter å bruke energi på å nekte virkeligheten.</p>
+                <p><em>«Dette er slik det er. Og det er vondt.»</em></p>`
+            },
+            {
+                name: "Selvmedfølelse (Self-compassion)",
+                tag: "Emosjonsregulering",
+                content: `<p>Snakk til deg selv slik du ville snakket til en god venn som hadde det vondt. Legg en hånd på hjertet og si:</p>
+                <p><em>«Det er lov å ha det vondt. Jeg er ikke alene om dette.»</em></p>`
+            },
+            {
+                name: "Atfertsaktivering – ett lite steg",
+                tag: "Emosjonsregulering",
+                content: `<p>Når tristheten gjør det vanskelig å handle: Velg én enkel, meningsfull aktivitet (dusje, gå en kort tur, lage te). Mestring bygges i små skritt.</p>`
+            },
+            {
+                name: "PLEASE – langsiktig sårbarhet",
+                tag: "Emosjonsregulering",
+                content: `<ul>
+                <li><strong>PL</strong>eie sykdommer</li>
+                <li><strong>E</strong>t balansert kosthold</li>
+                <li><strong>A</strong>void rusmidler</li>
+                <li><strong>S</strong>øvn – nok og regelmessig</li>
+                <li><strong>E</strong>xercise – beveg kroppen</li></ul>`
+            }
+        ]
+    },
+    skam: {
+        title: "Skam",
+        icon: "😳",
+        color: "var(--col-skam)",
+        desc: "Kroppen vil gjemme seg eller forsvinne. Skam handler om hvem du er ('jeg er feil'), mens skyld handler om hva du har gjort. Skam er svært ubehagelig, men forteller deg ikke alltid sannheten.",
+        skills: [
+            {
+                name: "Sjekk fakta om skammen",
+                tag: "Emosjonsregulering",
+                content: `<p>Skam er berettiget kun hvis du faktisk har brutt egne verdier. Spør:</p>
+                <ul><li>«Har jeg faktisk gjort noe som bryter med verdiene mine?»</li>
+                <li>«Eller <em>føles</em> det bare slik?»</li></ul>`
+            },
+            {
+                name: "Motsatt handling for skam",
+                tag: "Emosjonsregulering",
+                content: `<p>Skam vil at du skal gjemme deg. Motsatt handling er å eksponere deg:</p>
+                <ol><li>Hev hodet — rett ryggen</li><li>Hold øyekontakt</li><li>Del det du skammer deg over med en trygg person</li></ol>
+                <p>Skam trives i mørket og visner i lyset.</p>`
+            },
+            {
+                name: "Ikke-dømmende beskrivelse",
+                tag: "Mindfulness",
+                content: `<p>Beskriv situasjonen faktabasert, uten evalueringer eller merkelapper. Bruk «og» i stedet for «men». Unngå ord som «dårlig», «svak», «feil».</p>`
+            }
+        ]
+    },
+    avsky: {
+        title: "Avsky",
+        icon: "🤢",
+        color: "var(--col-avsky)",
+        desc: "Kroppen vil avvise noe som oppleves giftig, fremmed eller truende. Avsky kan rettes mot noe utenfor deg selv — eller mot deg selv.",
+        skills: [
+            {
+                name: "Identifiser hva avskyen retter seg mot",
+                tag: "Emosjonsregulering",
+                content: `<p>Er avskyen rettet mot:</p>
+                <ul><li>Noe <em>utenfor</em> deg (mat, person, situasjon)?</li>
+                <li>Noe <em>ved deg selv</em>?</li></ul>
+                <p>Selvrettet avsky kan være skam i en annen drakt — bruk da skam-verktøyene over.</p>`
+            },
+            {
+                name: "Ikke-dømmende oppmerksomhet",
+                tag: "Mindfulness",
+                content: `<p>Øv på å beskrive det du reagerer på uten å bruke avskysord («ekkel», «grusom»). Bruk nøytrale observasjoner:</p>
+                <p><em>«Det lukter sterkt»</em> i stedet for <em>«Det er kvalmende»</em>.</p>`
+            }
+        ]
+    },
+    glede: {
+        title: "Glede / Ro",
+        icon: "😊",
+        color: "var(--col-glede)",
+        desc: "Kroppen er i balanse — trygg, åpen og tilstede. Dette er en tilstand som bygger motstandskraft og psykologisk kapasitet.",
+        skills: [
+            {
+                name: "Vær fullt tilstede (Mindfulness)",
+                tag: "Mindfulness",
+                content: `<p>La deg være i den gode følelsen uten å bekymre deg for når den tar slutt. Beskriv den gjerne for deg selv:</p>
+                <p><em>«Akkurat nå kjenner jeg... og det er godt.»</em></p>`
+            },
+            {
+                name: "Bygg positive erfaringer",
+                tag: "Emosjonsregulering",
+                content: `<p>Planlegg én aktivitet per dag som er meningsfull eller hyggelig. Over tid reduserer dette sårbarhet for negative emosjoner (PLEASE).</p>`
+            }
+        ]
+    }
+};
+
+/* ── State ─────────────────────────────────────────────────────────── */
+const state = { selectedCount: 0 };
+
+/* ── DOM refs ──────────────────────────────────────────────────────── */
+const form        = document.getElementById('bodyScanForm');
+const analyzeBtn  = document.getElementById('analyzeBtn');
+const resetBtn    = document.getElementById('resetBtn');
+const resultat    = document.getElementById('resultat');
+const counterBadge = document.getElementById('counterBadge');
+const validationMsg = document.getElementById('validationMsg');
+const intensitySlider = document.getElementById('intensitySlider');
+const intensityVal    = document.getElementById('intensityVal');
+
+/* ── Intensity slider ──────────────────────────────────────────────── */
+intensitySlider.addEventListener('input', () => {
+    const v = intensitySlider.value;
+    intensityVal.textContent = v;
+    intensitySlider.setAttribute('aria-valuenow', v);
+});
+
+/* ── Checkbox counter ──────────────────────────────────────────────── */
+form.addEventListener('change', () => {
+    const count = form.querySelectorAll('input[type="checkbox"]:checked').length;
+    counterBadge.textContent = count;
+    counterBadge.classList.toggle('has-items', count > 0);
+    if (count > 0) validationMsg.classList.remove('visible');
+});
+
+/* ── Collapsible sections ──────────────────────────────────────────── */
+document.querySelectorAll('.section-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!expanded));
+        const panel = document.getElementById(btn.getAttribute('aria-controls'));
+        panel.hidden = expanded;
+    });
+});
+
+/* ── Analyze ───────────────────────────────────────────────────────── */
+analyzeBtn.addEventListener('click', analyzeEmotion);
+resetBtn.addEventListener('click', resetForm);
+
+function analyzeEmotion() {
+    const checkboxes = form.querySelectorAll('input[type="checkbox"]:checked');
+
+    if (checkboxes.length === 0) {
+        validationMsg.classList.add('visible');
+        validationMsg.focus();
+        return;
+    }
+    validationMsg.classList.remove('visible');
+
+    // Score emotions
+    const keys = Object.keys(emotionData);
+    const scores = {};
+    keys.forEach(k => { scores[k] = 0; });
+
+    const sensations = [];
+    checkboxes.forEach(box => {
+        sensations.push(box.getAttribute('data-text'));
+        box.value.split(',').forEach(emo => {
+            if (scores[emo] !== undefined) scores[emo]++;
+        });
+    });
+
+    const maxScore = Math.max(...Object.values(scores));
+    if (maxScore === 0) {
+        resultat.innerHTML = '<p>Kroppen sender blandede signaler. Pust rolig i 1 minutt og prøv igjen.</p>';
+        resultat.classList.add('visible');
+        return;
+    }
+
+    // Sort by score descending
+    const ranked = keys
+        .map(k => ({ key: k, score: scores[k] }))
+        .sort((a, b) => b.score - a.score)
+        .filter(x => x.score > 0);
+
+    const topEmotions   = ranked.filter(x => x.score === maxScore);
+    const secondScore   = ranked.find(x => x.score < maxScore && x.score > 0);
+    const secondaryEmotions = ranked.filter(x => x.score < maxScore && x.score > 0);
+
+    const intensity = parseInt(intensitySlider.value, 10);
+    const intensityLabel = intensity <= 3 ? 'lav' : intensity <= 6 ? 'moderat' : intensity <= 8 ? 'høy' : 'svært høy';
+    const timestamp = new Date().toLocaleString('nb-NO', { dateStyle: 'medium', timeStyle: 'short' });
+
+    // --- Build score bars ---
+    let scoreBarsHtml = `<div class="score-grid">
+        <h3 id="score-heading">Emosjonsprofil</h3>
+        <div role="list" aria-labelledby="score-heading">`;
+
+    ranked.concat(keys.filter(k => scores[k] === 0).map(k => ({ key: k, score: 0 }))).forEach(({ key, score }) => {
+        const data = emotionData[key];
+        const pct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+        scoreBarsHtml += `
+            <div class="score-row" role="listitem">
+                <span class="score-label">${data.icon} ${data.title.split(' / ')[0]}</span>
+                <div class="score-bar-track" role="presentation">
+                    <div class="score-bar-fill" style="width:${pct}%; background:${data.color};" 
+                         aria-label="${data.title}: ${score} treff"></div>
+                </div>
+                <span class="score-num">${score}</span>
+            </div>`;
+    });
+    scoreBarsHtml += '</div></div>';
+
+    // --- Build primary result cards ---
+    let cardsHtml = '';
+    topEmotions.forEach((item, idx) => {
+        const data = emotionData[item.key];
+        const isPrimary = idx === 0;
+        const skillsHtml = data.skills.map((s, si) => `
+            <div class="skill-item">
+                <button type="button" class="skill-item-btn"
+                        aria-expanded="false"
+                        aria-controls="skill-${item.key}-${si}">
+                    <span>${s.name}</span>
+                    <span class="skill-tag">${s.tag}</span>
+                </button>
+                <div id="skill-${item.key}-${si}" class="skill-item-content" hidden>
+                    ${s.content}
+                </div>
+            </div>`).join('');
+
+        cardsHtml += `
+            <div class="result-card ${isPrimary ? 'primary-card' : ''}" role="article"
+                 aria-label="${data.title}">
+                <div class="result-card-header">
+                    <div class="result-card-title">
+                        <span aria-hidden="true">${data.icon}</span>
+                        ${data.title}
+                        ${isPrimary ? '<span class="primary-badge">STERKEST</span>' : ''}
+                    </div>
+                    <p class="result-card-desc">${data.desc}</p>
+                </div>
+                <div class="result-card-body">
+                    <p class="skill-title">DBT-ferdigheter å prøve</p>
+                    ${skillsHtml}
+                </div>
+            </div>`;
+    });
+
+    // --- Secondary emotions ---
+    let secondaryHtml = '';
+    if (secondaryEmotions.length > 0) {
+        const tags = secondaryEmotions.map(e => {
+            const d = emotionData[e.key];
+            return `<span class="secondary-tag">${d.icon} ${d.title}</span>`;
+        }).join('');
+        secondaryHtml = `
+            <div class="secondary-emotions">
+                <h3>Andre emosjoner som kan være til stede</h3>
+                ${tags}
+                <p style="font-size:.82rem; color:var(--muted); margin-top:10px;">
+                    Emosjoner opptrer sjelden alene. Det er helt normalt å kjenne flere på én gang.
+                </p>
+            </div>`;
+    }
+
+    // --- Intensity comment ---
+    let intensityNote = '';
+    if (intensity >= 7) {
+        intensityNote = `<div class="breathe-card" style="margin-bottom:16px;" role="note">
+            <div class="icon">⚠️</div>
+            <p><strong>Du rapporterer ${intensityLabel} intensitet (${intensity}/10)</strong><br>
+            Vurder å bruke TIPP-ferdigheten eller en kriseberedskapsplan hvis intensiteten gjør det vanskelig å fungere.</p>
+        </div>`;
+    }
+
+    // --- Full result ---
+    resultat.innerHTML = `
+        <h2 class="result-header">
+            Basert på det du kjenner akkurat nå
+            <em>Fornemmelser: ${sensations.join(', ')} · Intensitet: ${intensity}/10 (${intensityLabel})</em>
+        </h2>
+        ${intensityNote}
+        ${scoreBarsHtml}
+        ${cardsHtml}
+        ${secondaryHtml}
+        <div class="result-footer">
+            <span class="timestamp">Registrert: ${timestamp}</span>
+            <button type="button" class="btn-print" onclick="window.print()">🖨️ Skriv ut / Lagre</button>
+        </div>
+    `;
+
+    resultat.classList.add('visible');
+    resetBtn.classList.add('visible');
+
+    // Wire skill accordion after injection
+    resultat.querySelectorAll('.skill-item-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const expanded = btn.getAttribute('aria-expanded') === 'true';
+            btn.setAttribute('aria-expanded', String(!expanded));
+            const panel = document.getElementById(btn.getAttribute('aria-controls'));
+            panel.hidden = expanded;
+        });
+    });
+
+    // Scroll
+    resultat.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ── Reset ─────────────────────────────────────────────────────────── */
+function resetForm() {
+    form.reset();
+    counterBadge.textContent = '0';
+    counterBadge.classList.remove('has-items');
+    intensityVal.textContent = '5';
+    intensitySlider.value = '5';
+    resultat.innerHTML = '';
+    resultat.classList.remove('visible');
+    resetBtn.classList.remove('visible');
+    validationMsg.classList.remove('visible');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

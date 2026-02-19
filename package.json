@@ -1,0 +1,9 @@
+{
+  "name": "dbt-kropp-folelser",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Statisk DBT kroppsscan-app (index.html)",
+  "scripts": {
+    "dev": "npx --yes serve -l 5173 ."
+  }
+}
