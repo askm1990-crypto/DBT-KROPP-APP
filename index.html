@@ -512,10 +512,23 @@
             transition: width .6s cubic-bezier(.22,1,.36,1);
         }
         .score-num {
-            width: 18px;
+            width: 30px;
             text-align: right;
             color: var(--muted);
             font-size: .78rem;
+        }
+
+        /* Emotion subtype badge */
+        .subtype-badge {
+            display: inline-block;
+            font-size: .75rem;
+            font-weight: 500;
+            background: #f0f4f5;
+            color: var(--teal-deep);
+            border-radius: 20px;
+            padding: 2px 10px;
+            margin-left: 6px;
+            vertical-align: middle;
         }
 
         /* Emotion result cards */
@@ -539,6 +552,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
             margin: 0 0 6px;
         }
         .primary-badge {
@@ -574,6 +588,10 @@
             margin-bottom: 8px;
             overflow: hidden;
         }
+        .skill-item.recommended-skill {
+            border-color: var(--teal);
+            background: var(--teal-light);
+        }
         .skill-item-btn {
             width: 100%;
             background: none;
@@ -601,6 +619,15 @@
             flex-shrink: 0;
             margin-left: 8px;
         }
+        .skill-item-btn .rec-label {
+            font-size: .68rem;
+            background: var(--teal);
+            color: white;
+            border-radius: 20px;
+            padding: 2px 8px;
+            flex-shrink: 0;
+            margin-left: 4px;
+        }
         .skill-item-content {
             background: #fafcfc;
             border-top: 1px solid var(--border);
@@ -614,6 +641,41 @@
             padding-left: 18px;
         }
         .skill-item-content li { margin-bottom: 4px; }
+
+        /* ── Choose-one CTA ──────────────────────────────── */
+        .cta-card {
+            background: linear-gradient(135deg, var(--sage) 0%, #5a8a68 100%);
+            color: white;
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            margin-bottom: 14px;
+            text-align: center;
+        }
+        .cta-card h3 {
+            font-family: Georgia, 'Palatino Linotype', Palatino, 'Book Antiqua', serif;
+            font-size: 1.1rem;
+            margin: 0 0 6px;
+            font-weight: 400;
+        }
+        .cta-card p {
+            margin: 0 0 14px;
+            font-size: .88rem;
+            opacity: .9;
+        }
+        .cta-card .cta-skill-name {
+            display: inline-block;
+            background: rgba(255,255,255,.2);
+            border: 1.5px solid rgba(255,255,255,.4);
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: .95rem;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .cta-card .cta-skill-name:hover {
+            background: rgba(255,255,255,.3);
+        }
 
         /* Secondary cards */
         .secondary-emotions {
@@ -675,7 +737,7 @@
             body { background: white; padding: 0; }
             .breathe-card, .btn-primary, .btn-secondary, .btn-print,
             .section-btn, .counter-bar, .intensity-section,
-            .form-card, .validation-msg { display: none !important; }
+            .form-card, .validation-msg, .cta-card { display: none !important; }
             .result-card { box-shadow: none; border: 1px solid #ccc; }
         }
 
@@ -928,7 +990,7 @@
         </div>
 
         <!-- Validation -->
-        <div class="validation-msg" id="validationMsg" role="alert" aria-live="assertive">
+        <div class="validation-msg" id="validationMsg" role="alert" aria-live="assertive" tabindex="-1">
             <span>⚠️</span>
             <span>Vennligst kryss av for minst én ting du kjenner i kroppen.</span>
         </div>
@@ -962,12 +1024,10 @@
     confirmBtn.addEventListener('click', () => {
         overlay.classList.add('hidden');
         document.body.classList.remove('overlay-open');
-        // Return focus to top of main content
         document.querySelector('.container').setAttribute('tabindex', '-1');
         document.querySelector('.container').focus();
     });
 
-    // Trap focus inside disclaimer while open
     overlay.addEventListener('keydown', e => {
         if (e.key !== 'Tab') return;
         const focusable = overlay.querySelectorAll('button, [href], input, [tabindex]:not([tabindex="-1"])');
@@ -980,7 +1040,6 @@
         }
     });
 
-    // Set initial focus to confirm button
     confirmBtn.focus();
 })();
 
@@ -991,31 +1050,41 @@ const emotionData = {
         icon: "😨",
         color: "var(--col-frykt)",
         desc: "Kroppen mobiliserer for å beskytte deg mot en opplevd trussel — kjemp, flykt eller frys. Dette er et evolusjonsbiologisk alarmsystem.",
+        /* NEW: subtypes based on intensity */
+        subtypes: {
+            low:  { label: "Uro / Bekymring", desc: "En mild uro — kroppen sier «vær oppmerksom», men det er ikke akutt fare." },
+            mid:  { label: "Frykt / Anspenthet", desc: "Kroppen er tydelig aktivert. Du merker at noe oppleves truende." },
+            high: { label: "Akutt angst / Panikk", desc: "Kroppen er i full alarmberedskap. Nervesystemet kjører kjemp-eller-flykt på høygir." }
+        },
         skills: [
             {
                 name: "Sjekk fakta",
                 tag: "Emosjonsregulering",
+                priority: "reflective", /* shown first at low intensity */
                 content: `<p>Spør deg selv: <em>«Er det en reell trussel her og nå, eller tolker hjernen min situasjonen som farligere enn den er?»</em></p>
                 <p>Skriv ned hva du tror vil skje, og vurder sannsynligheten objektivt.</p>`
             },
             {
                 name: "Motsatt handling (Opposite Action)",
                 tag: "Emosjonsregulering",
+                priority: "reflective",
                 content: `<p>Hvis frykten ikke er berettiget i situasjonen: Gjør det stikk motsatte av hva frykten ber deg om.</p>
                 <ol><li>Nærm deg det du unngår — i små trinn</li><li>Gjenta til frykten reduseres</li></ol>`
             },
             {
                 name: "4-7-8 Pust",
                 tag: "Stresstoleranse / TIPP",
+                priority: "crisis",  /* shown first at high intensity */
                 content: `<p>Pust inn i 4 sekunder → hold i 7 → pust rolig ut i 8. Gjenta 3–4 ganger. Aktiverer det parasympatiske nervesystemet.</p>`
             },
             {
-                name: "TIPP – senk fysiologisk arousal",
+                name: "TIPP – senk fysiologisk aktivering",
                 tag: "Stresstoleranse",
+                priority: "crisis",
                 content: `<ul>
                 <li><strong>T</strong>emperatur – Kaldt vann i ansiktet senker pulsen raskt</li>
                 <li><strong>I</strong>ntensiv trening – Rask bevegelse i 20 min</li>
-                <li><strong>P</strong>acet pust – Langsom utpust</li>
+                <li><strong>P</strong>ust med pacing – Langsom utpust</li>
                 <li><strong>P</strong>rogressiv muskelavslapning</li></ul>`
             }
         ]
@@ -1025,30 +1094,40 @@ const emotionData = {
         icon: "😠",
         color: "var(--col-sinne)",
         desc: "Kroppen er klar til kamp. Du har sannsynligvis opplevd urettferdighet, brudd på grenser, eller blokkering av et mål. Sinne er ofte et sekundært signal.",
+        subtypes: {
+            low:  { label: "Irritasjon / Frustrasjon", desc: "Noe gnager, men det er håndterbart. Kroppen gir et mildt signal." },
+            mid:  { label: "Sinne", desc: "Du kjenner tydelig at noe er urettferdig eller blokkerer deg. Kroppen er aktivert." },
+            high: { label: "Raseri / Intens frustrasjon", desc: "Kroppen er i full kampmodus. Impulsen til å handle er sterk og umiddelbar." }
+        },
         skills: [
             {
                 name: "STOPP-ferdigheten",
                 tag: "Mindfulness",
+                priority: "always_top",
                 content: `<ol>
-                <li><strong>S</strong>topp — ikke gjør noe impulsivt</li>
-                <li><strong>T</strong>a et skritt tilbake (bokstavelig)</li>
-                <li><strong>O</strong>bserver hva som skjer i og rundt deg</li>
-                <li><strong>P</strong>rosed med bevissthet</li></ol>`
+                <li><strong>S</strong>topp — frys, ikke gjør noe impulsivt</li>
+                <li><strong>T</strong>a et skritt tilbake — trekk deg fysisk eller mentalt ut av situasjonen</li>
+                <li><strong>O</strong>bserver — hva skjer i kroppen, tankene og rundt deg?</li>
+                <li><strong>P</strong>ust rolig — noen dype pust før du handler</li>
+                <li><strong>P</strong>rosed bevisst — velg en klok handling i stedet for en impulsiv</li></ol>`
             },
             {
                 name: "Sjekk sekundæremosjon",
                 tag: "Emosjonsregulering",
+                priority: "reflective",
                 content: `<p>Sinne skjuler ofte en underliggende primæremosjon: frykt, sorg, skam eller skuffelse. Spør: <em>«Hva er den underliggende smerten her?»</em></p>`
             },
             {
                 name: "Problemløsning",
                 tag: "Emosjonsregulering",
+                priority: "reflective",
                 content: `<p>Hvis sinnet er berettiget og situasjonen kan endres:</p>
                 <ol><li>Definer problemet konkret</li><li>Brainstorm løsninger</li><li>Velg én og test den</li></ol>`
             },
             {
                 name: "Fysiologisk kjøling",
                 tag: "Stresstoleranse / TIPP",
+                priority: "crisis",
                 content: `<p>Kaldt vann i ansiktet eller ned langs underarmene aktiverer dykkerrefleksen og senker pulsen raskt. Alternativt: intensiv bevegelse for å «brenne av» den aktiverte energien.</p>`
             }
         ]
@@ -1058,33 +1137,43 @@ const emotionData = {
         icon: "😢",
         color: "var(--col-tristhet)",
         desc: "Kroppen signaliserer tap, savn eller behov for trøst og hvile. Energien trekkes innover. Tristhet er et naturlig og sunt signal — ikke noe som skal bort umiddelbart.",
+        subtypes: {
+            low:  { label: "Melankoli / Vemod", desc: "En mild tristhet — du kjenner at noe mangler, men det er ikke overveldende." },
+            mid:  { label: "Tristhet / Sorg", desc: "Tapet eller savnet er tydelig. Kroppen ønsker trøst og hvile." },
+            high: { label: "Dyp sorg / Fortvilelse", desc: "Smerten er intens. Alt føles tungt, og det er vanskelig å se fremover." }
+        },
         skills: [
             {
                 name: "Radikal aksept",
                 tag: "Stresstoleranse",
+                priority: "reflective",
                 content: `<p>Aksepter det smertefulle som faktisk er, uten å kjempe mot det. Aksept betyr ikke at du liker det — det betyr at du slutter å bruke energi på å nekte virkeligheten.</p>
                 <p><em>«Dette er slik det er. Og det er vondt.»</em></p>`
             },
             {
-                name: "Selvmedfølelse (Self-compassion)",
+                name: "Selvmedfølelse",
                 tag: "Emosjonsregulering",
+                priority: "crisis",
                 content: `<p>Snakk til deg selv slik du ville snakket til en god venn som hadde det vondt. Legg en hånd på hjertet og si:</p>
                 <p><em>«Det er lov å ha det vondt. Jeg er ikke alene om dette.»</em></p>`
             },
             {
-                name: "Atfertsaktivering – ett lite steg",
+                name: "Atferdsaktivering – ett lite steg",
                 tag: "Emosjonsregulering",
+                priority: "reflective",
                 content: `<p>Når tristheten gjør det vanskelig å handle: Velg én enkel, meningsfull aktivitet (dusje, gå en kort tur, lage te). Mestring bygges i små skritt.</p>`
             },
             {
-                name: "PLEASE – langsiktig sårbarhet",
+                name: "PLEASE – reduser sårbarhet",
                 tag: "Emosjonsregulering",
+                priority: "reflective",
                 content: `<ul>
-                <li><strong>PL</strong>eie sykdommer</li>
-                <li><strong>E</strong>t balansert kosthold</li>
-                <li><strong>A</strong>void rusmidler</li>
+                <li><strong>P</strong>leie sykdommer og fysisk helse</li>
+                <li><strong>L</strong>evende, balansert kosthold</li>
+                <li><strong>E</strong>liminér rusmidler</li>
+                <li><strong>A</strong>ktivitet – beveg kroppen regelmessig</li>
                 <li><strong>S</strong>øvn – nok og regelmessig</li>
-                <li><strong>E</strong>xercise – beveg kroppen</li></ul>`
+                <li><strong>E</strong>ngasjer deg i mestringsaktiviteter</li></ul>`
             }
         ]
     },
@@ -1093,10 +1182,16 @@ const emotionData = {
         icon: "😳",
         color: "var(--col-skam)",
         desc: "Kroppen vil gjemme seg eller forsvinne. Skam handler om hvem du er ('jeg er feil'), mens skyld handler om hva du har gjort. Skam er svært ubehagelig, men forteller deg ikke alltid sannheten.",
+        subtypes: {
+            low:  { label: "Usikkerhet / Flauhet", desc: "En lett følelse av å være utilstrekkelig eller forlegen." },
+            mid:  { label: "Skam", desc: "Du opplever deg selv som «feil» på et dypere plan. Impulsen til å gjemme seg er tydelig." },
+            high: { label: "Dyp skam / Selvforakt", desc: "En intens følelse av å være fundamentalt mangelfull. Smerten er gjennomgripende." }
+        },
         skills: [
             {
                 name: "Sjekk fakta om skammen",
                 tag: "Emosjonsregulering",
+                priority: "reflective",
                 content: `<p>Skam er berettiget kun hvis du faktisk har brutt egne verdier. Spør:</p>
                 <ul><li>«Har jeg faktisk gjort noe som bryter med verdiene mine?»</li>
                 <li>«Eller <em>føles</em> det bare slik?»</li></ul>`
@@ -1104,6 +1199,7 @@ const emotionData = {
             {
                 name: "Motsatt handling for skam",
                 tag: "Emosjonsregulering",
+                priority: "crisis",
                 content: `<p>Skam vil at du skal gjemme deg. Motsatt handling er å eksponere deg:</p>
                 <ol><li>Hev hodet — rett ryggen</li><li>Hold øyekontakt</li><li>Del det du skammer deg over med en trygg person</li></ol>
                 <p>Skam trives i mørket og visner i lyset.</p>`
@@ -1111,6 +1207,7 @@ const emotionData = {
             {
                 name: "Ikke-dømmende beskrivelse",
                 tag: "Mindfulness",
+                priority: "reflective",
                 content: `<p>Beskriv situasjonen faktabasert, uten evalueringer eller merkelapper. Bruk «og» i stedet for «men». Unngå ord som «dårlig», «svak», «feil».</p>`
             }
         ]
@@ -1120,10 +1217,16 @@ const emotionData = {
         icon: "🤢",
         color: "var(--col-avsky)",
         desc: "Kroppen vil avvise noe som oppleves giftig, fremmed eller truende. Avsky kan rettes mot noe utenfor deg selv — eller mot deg selv.",
+        subtypes: {
+            low:  { label: "Ubehag / Motvilje", desc: "Noe føles frastøtende, men det er mildt og håndterbart." },
+            mid:  { label: "Avsky", desc: "Du kjenner en tydelig fysisk reaksjon — kroppen vil avvise noe." },
+            high: { label: "Intens avsky / Kvalme", desc: "Kroppen reagerer kraftig. Det er vanskelig å være i nærheten av det som trigger reaksjonen." }
+        },
         skills: [
             {
                 name: "Identifiser hva avskyen retter seg mot",
                 tag: "Emosjonsregulering",
+                priority: "reflective",
                 content: `<p>Er avskyen rettet mot:</p>
                 <ul><li>Noe <em>utenfor</em> deg (mat, person, situasjon)?</li>
                 <li>Noe <em>ved deg selv</em>?</li></ul>
@@ -1132,6 +1235,7 @@ const emotionData = {
             {
                 name: "Ikke-dømmende oppmerksomhet",
                 tag: "Mindfulness",
+                priority: "reflective",
                 content: `<p>Øv på å beskrive det du reagerer på uten å bruke avskysord («ekkel», «grusom»). Bruk nøytrale observasjoner:</p>
                 <p><em>«Det lukter sterkt»</em> i stedet for <em>«Det er kvalmende»</em>.</p>`
             }
@@ -1142,24 +1246,28 @@ const emotionData = {
         icon: "😊",
         color: "var(--col-glede)",
         desc: "Kroppen er i balanse — trygg, åpen og tilstede. Dette er en tilstand som bygger motstandskraft og psykologisk kapasitet.",
+        subtypes: {
+            low:  { label: "Tilfredshet / Ro", desc: "En stille, god tilstand. Kroppen er avslappet og i balanse." },
+            mid:  { label: "Glede", desc: "Du kjenner en tydelig positiv følelse — en varme og letthet i kroppen." },
+            high: { label: "Dyp glede / Takknemlighet", desc: "En sterk opplevelse av mening, forbindelse eller takknemlighet." }
+        },
         skills: [
             {
                 name: "Vær fullt tilstede (Mindfulness)",
                 tag: "Mindfulness",
+                priority: "reflective",
                 content: `<p>La deg være i den gode følelsen uten å bekymre deg for når den tar slutt. Beskriv den gjerne for deg selv:</p>
                 <p><em>«Akkurat nå kjenner jeg... og det er godt.»</em></p>`
             },
             {
                 name: "Bygg positive erfaringer",
                 tag: "Emosjonsregulering",
-                content: `<p>Planlegg én aktivitet per dag som er meningsfull eller hyggelig. Over tid reduserer dette sårbarhet for negative emosjoner (PLEASE).</p>`
+                priority: "reflective",
+                content: `<p>Planlegg én aktivitet per dag som er meningsfull eller hyggelig. Over tid reduserer dette sårbarhet for negative emosjoner.</p>`
             }
         ]
     }
 };
-
-/* ── State ─────────────────────────────────────────────────────────── */
-const state = { selectedCount: 0 };
 
 /* ── DOM refs ──────────────────────────────────────────────────────── */
 const form        = document.getElementById('bodyScanForm');
@@ -1196,6 +1304,35 @@ document.querySelectorAll('.section-btn').forEach(btn => {
     });
 });
 
+/* ── Helper: get intensity tier ────────────────────────────────────── */
+function getIntensityTier(intensity) {
+    if (intensity <= 3) return 'low';
+    if (intensity <= 7) return 'mid';
+    return 'high';
+}
+
+/* ── Helper: sort skills by intensity ──────────────────────────────── */
+function sortSkillsByIntensity(skills, intensity) {
+    const tier = getIntensityTier(intensity);
+    const sorted = [...skills];
+    sorted.sort((a, b) => {
+        // always_top beats everything
+        if (a.priority === 'always_top' && b.priority !== 'always_top') return -1;
+        if (a.priority !== 'always_top' && b.priority === 'always_top') return 1;
+        if (tier === 'high') {
+            // Crisis skills next at high intensity
+            if (a.priority === 'crisis' && b.priority === 'reflective') return -1;
+            if (a.priority === 'reflective' && b.priority === 'crisis') return 1;
+        } else {
+            // Reflective skills next at low/mid intensity
+            if (a.priority === 'reflective' && b.priority === 'crisis') return -1;
+            if (a.priority === 'crisis' && b.priority === 'reflective') return 1;
+        }
+        return 0;
+    });
+    return sorted;
+}
+
 /* ── Analyze ───────────────────────────────────────────────────────── */
 analyzeBtn.addEventListener('click', analyzeEmotion);
 resetBtn.addEventListener('click', resetForm);
@@ -1210,7 +1347,11 @@ function analyzeEmotion() {
     }
     validationMsg.classList.remove('visible');
 
-    // Score emotions
+    const intensity = parseInt(intensitySlider.value, 10);
+    const tier = getIntensityTier(intensity);
+
+    // Score emotions by raw body-signal counts
+    // Intensity is a separate dimension — it affects subtype + skill order, not the score itself
     const keys = Object.keys(emotionData);
     const scores = {};
     keys.forEach(k => { scores[k] = 0; });
@@ -1236,20 +1377,24 @@ function analyzeEmotion() {
         .sort((a, b) => b.score - a.score)
         .filter(x => x.score > 0);
 
-    const topEmotions   = ranked.filter(x => x.score === maxScore);
-    const secondScore   = ranked.find(x => x.score < maxScore && x.score > 0);
-    const secondaryEmotions = ranked.filter(x => x.score < maxScore && x.score > 0);
+    const topScore = ranked[0].score;
+    const topEmotions = ranked.filter(x => x.score === topScore);
+    const secondaryEmotions = ranked.filter(x => x.score < topScore && x.score > 0);
 
-    const intensity = parseInt(intensitySlider.value, 10);
-    const intensityLabel = intensity <= 3 ? 'lav' : intensity <= 6 ? 'moderat' : intensity <= 8 ? 'høy' : 'svært høy';
+    const intensityLabel = intensity <= 3 ? 'lav' : intensity <= 7 ? 'moderat' : 'høy';
     const timestamp = new Date().toLocaleString('nb-NO', { dateStyle: 'medium', timeStyle: 'short' });
 
-    // --- Build score bars ---
+    // --- Build score bars (raw body-signal counts) ---
+    const allForBars = ranked.concat(
+        keys.filter(k => scores[k] === 0).map(k => ({ key: k, score: 0 }))
+    );
+
     let scoreBarsHtml = `<div class="score-grid">
         <h3 id="score-heading">Emosjonsprofil</h3>
+        <p style="font-size:.78rem;color:var(--muted);margin:-8px 0 14px;">Basert på ${checkboxes.length} kroppslige fornemmelser</p>
         <div role="list" aria-labelledby="score-heading">`;
 
-    ranked.concat(keys.filter(k => scores[k] === 0).map(k => ({ key: k, score: 0 }))).forEach(({ key, score }) => {
+    allForBars.forEach(({ key, score }) => {
         const data = emotionData[key];
         const pct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
         scoreBarsHtml += `
@@ -1264,23 +1409,46 @@ function analyzeEmotion() {
     });
     scoreBarsHtml += '</div></div>';
 
-    // --- Build primary result cards ---
+    // --- Build primary result cards with subtypes and sorted skills ---
     let cardsHtml = '';
+    let firstRecommendedSkill = null;
+    let firstRecommendedEmotionKey = null;
+
     topEmotions.forEach((item, idx) => {
         const data = emotionData[item.key];
         const isPrimary = idx === 0;
-        const skillsHtml = data.skills.map((s, si) => `
-            <div class="skill-item">
+
+        // ── IMPROVEMENT 2: Emotion subtype ──
+        const subtype = data.subtypes[tier];
+        const subtypeBadge = `<span class="subtype-badge">${subtype.label}</span>`;
+
+        // ── IMPROVEMENT 3: Sort skills by intensity ──
+        const sortedSkills = sortSkillsByIntensity(data.skills, intensity);
+
+        // Track first recommended skill for CTA
+        if (isPrimary && sortedSkills.length > 0) {
+            firstRecommendedSkill = sortedSkills[0];
+            firstRecommendedEmotionKey = item.key;
+        }
+
+        const skillsHtml = sortedSkills.map((s, si) => {
+            const isFirst = si === 0 && isPrimary;
+            const recClass = isFirst ? 'recommended-skill' : '';
+            const recLabel = isFirst ? '<span class="rec-label">ANBEFALT NÅ</span>' : '';
+            return `
+            <div class="skill-item ${recClass}">
                 <button type="button" class="skill-item-btn"
-                        aria-expanded="false"
-                        aria-controls="skill-${item.key}-${si}">
-                    <span>${s.name}</span>
+                        aria-expanded="${isFirst ? 'true' : 'false'}"
+                        aria-controls="skill-${item.key}-${si}"
+                        id="skill-btn-${item.key}-${si}">
+                    <span>${s.name} ${recLabel}</span>
                     <span class="skill-tag">${s.tag}</span>
                 </button>
-                <div id="skill-${item.key}-${si}" class="skill-item-content" hidden>
+                <div id="skill-${item.key}-${si}" class="skill-item-content" ${isFirst ? '' : 'hidden'}>
                     ${s.content}
                 </div>
-            </div>`).join('');
+            </div>`;
+        }).join('');
 
         cardsHtml += `
             <div class="result-card ${isPrimary ? 'primary-card' : ''}" role="article"
@@ -1289,12 +1457,13 @@ function analyzeEmotion() {
                     <div class="result-card-title">
                         <span aria-hidden="true">${data.icon}</span>
                         ${data.title}
+                        ${subtypeBadge}
                         ${isPrimary ? '<span class="primary-badge">STERKEST</span>' : ''}
                     </div>
-                    <p class="result-card-desc">${data.desc}</p>
+                    <p class="result-card-desc">${subtype.desc}</p>
                 </div>
                 <div class="result-card-body">
-                    <p class="skill-title">DBT-ferdigheter å prøve</p>
+                    <p class="skill-title">DBT-ferdigheter å prøve ${tier === 'high' ? '· Kriseferdigheter prioritert' : '· Refleksjonsferdigheter prioritert'}</p>
                     ${skillsHtml}
                 </div>
             </div>`;
@@ -1305,7 +1474,8 @@ function analyzeEmotion() {
     if (secondaryEmotions.length > 0) {
         const tags = secondaryEmotions.map(e => {
             const d = emotionData[e.key];
-            return `<span class="secondary-tag">${d.icon} ${d.title}</span>`;
+            const st = d.subtypes[tier];
+            return `<span class="secondary-tag">${d.icon} ${st.label}</span>`;
         }).join('');
         secondaryHtml = `
             <div class="secondary-emotions">
@@ -1317,14 +1487,29 @@ function analyzeEmotion() {
             </div>`;
     }
 
-    // --- Intensity comment ---
+    // --- Intensity warning ---
     let intensityNote = '';
-    if (intensity >= 7) {
+    if (intensity >= 8) {
         intensityNote = `<div class="breathe-card" style="margin-bottom:16px;" role="note">
             <div class="icon">⚠️</div>
             <p><strong>Du rapporterer ${intensityLabel} intensitet (${intensity}/10)</strong><br>
-            Vurder å bruke TIPP-ferdigheten eller en kriseberedskapsplan hvis intensiteten gjør det vanskelig å fungere.</p>
+            Kriseferdigheter er løftet øverst. Vurder å bruke TIPP-ferdigheten eller en kriseberedskapsplan hvis det er vanskelig å fungere.</p>
         </div>`;
+    }
+
+    // ── IMPROVEMENT 4: Choose-one CTA ──
+    let ctaHtml = '';
+    if (firstRecommendedSkill) {
+        const targetId = `skill-btn-${firstRecommendedEmotionKey}-0`;
+        ctaHtml = `
+            <div class="cta-card">
+                <h3>Velg én ting å prøve akkurat nå</h3>
+                <p>Du trenger ikke gjøre alt — ett lite steg er nok.</p>
+                <a class="cta-skill-name" href="#${targetId}" 
+                   onclick="document.getElementById('${targetId}').scrollIntoView({behavior:'smooth',block:'center'}); return false;">
+                    → ${firstRecommendedSkill.name}
+                </a>
+            </div>`;
     }
 
     // --- Full result ---
@@ -1334,6 +1519,7 @@ function analyzeEmotion() {
             <em>Fornemmelser: ${sensations.join(', ')} · Intensitet: ${intensity}/10 (${intensityLabel})</em>
         </h2>
         ${intensityNote}
+        ${ctaHtml}
         ${scoreBarsHtml}
         ${cardsHtml}
         ${secondaryHtml}
